@@ -53,11 +53,41 @@ For Each colname In survey_cols
     Sheets("Results").Range("A1").Insert Shift:=xlShiftToRight
 Next colname
 
+' Variables and constants for concatenation
+Dim col As Range
+Dim row As Range
+Dim nrow As Integer
+    nrow = Sheets("Paste Survey Data").UsedRange.Rows.Count
+Const sep As String = ", "
+' Insert empty column
+' .Activate is not best practice but we expect << 1000 rows of data so the slowdown won't be noticeable
+Sheets("Results").Activate
+Range("A:A").Insert
 ' Create concatenated Centers column
 For Each colname In concat_cols
+    ' Grab the data associated with the current column name
     On Error GoTo BadColName
+        Sheets("Paste Survey Data").Activate
+        Set col = Cells.Find(colname, , xlValues, xlWhole).EntireColumn.Range(Cells(1, 1), Cells(nrow, 1))
     On Error GoTo 0
+    Debug.Print col.Rows.Count
+    ' Concatenate each non-blank entry to purpose
+    Sheets("Results").Activate
+    For Each row In col
+        ' If there is text entered
+        If row > 0 Then
+            ' If there is nothing in the cell then initialize
+            If Range("A" & row.row).Value = 0 Then
+                Range("A" & row.row).Value = row
+            ' If there is already something in the cell, concatenate
+            Else
+                Range("A" & row.row).Value = Range("A" & row.row).Value & sep & row
+            End If
+        End If
+    Next row
 Next colname
+' Change header to Purpose
+Sheets("Results").Range("A1").Value = "Purpose"
 
 ' Append additional fields from Follow-Up Data
 For Each colname In addl_cols
