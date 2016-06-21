@@ -1,6 +1,6 @@
-Attribute VB_Name = "ProposalCombinator"
-Sub Combinator()
-' Proposal Dataset Combinator
+Attribute VB_Name = "ProposalCombiner"
+Sub ProposalCombiner()
+' Proposal Dataset Combiner
 ' Written by Paul Hively, 6/20/2016
 ' Takes Communications proposal data, and follow-up survey data, and combines into
 ' a single field (joining on ID), deleting extraneous columns
@@ -43,19 +43,44 @@ final_colnames = Array( _
 Sheets("Results").Cells.Clear
 
 ' Copy survey columns to Results tab as-is
-
+' Loop through the column names in survey_cols
+For Each colname In survey_cols
+    ' Try matching column with current column name
+    On Error GoTo BadColName
+        Sheets("Paste Survey Data").Cells.Find(colname, , xlValues, xlWhole).EntireColumn.Copy
+    On Error GoTo 0
+    ' Insert to column A of Results tab
+    Sheets("Results").Range("A1").Insert Shift:=xlShiftToRight
+Next colname
 
 ' Create concatenated Centers column
-
+For Each colname In concat_cols
+    On Error GoTo BadColName
+    On Error GoTo 0
+Next colname
 
 ' Append additional fields from Follow-Up Data
+For Each colname In addl_cols
+    On Error GoTo BadColName
+    On Error GoTo 0
+Next colname
 
+' Reorder columns as needed
+For Each colname In col_order
+    On Error GoTo BadColName
+    On Error GoTo 0
+Next colname
 
-' Check for double headers (rows 1 and 2)
-
-
-' Reorder and rename columns as needed
+' Check for double headers (rows 1 and 2) and rename row 1 headers
 
 
 ' Done!
+Exit Sub
+
+' ====== Error handling ======
+' Bad column name
+BadColName:
+    MsgBox "Warning: No column named " & colname
+Resume Next
+
 End Sub
