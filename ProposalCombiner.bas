@@ -127,15 +127,18 @@ Range("A:A").NumberFormat = "mm/dd/yyyy"
 
 
 ' Sort columns
-' Sheets("Results").Sort.SortFields.Clear
+Sheets("Results").Sort.SortFields.Clear
 ' Join() concatenates the array with a , separator
 Sheets("Results").Sort.SortFields.Add _
     Key:=Range("1:1"), CustomOrder:=Join(col_order, ",")
 With Sheets("Results").Sort
+    .SetRange ActiveSheet.UsedRange
     ' xlLeftToRight sorts columns by row, instead of rows by column
     .Orientation = xlLeftToRight
     .Apply
 End With
+' Cleanup
+Sheets("Results").Sort.SortFields.Clear
 ' Format V9 as date sans time
 colname = "V9"
 On Error GoTo BadColName
@@ -161,6 +164,7 @@ On Error GoTo 0
 For idx = 0 To UBound(final_colnames)
     Cells(1, idx + 1).Value = final_colnames(idx)
 Next idx
+
 
 ' Done!
 Exit Sub
