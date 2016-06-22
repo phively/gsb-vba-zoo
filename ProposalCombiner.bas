@@ -152,7 +152,15 @@ Next idx
 
 ' Check for double headers (rows 1 and 2) and rename row 1 headers
 ' See if 2nd row of V9 is not in date format
-
+On Error GoTo BadColName
+    If Not IsNumeric(Cells.Find(colname, , xlValues, xlWhole).Cells(2, 1)) Then
+        Cells(2, 1).EntireRow.Delete
+    End If
+On Error GoTo 0
+' Overwrite headers with final_colnames
+For idx = 0 To UBound(final_colnames)
+    Cells(1, idx + 1).Value = final_colnames(idx)
+Next idx
 
 ' Done!
 Exit Sub
