@@ -14,7 +14,7 @@ Dim final_colnames As Variant
 
 ' ========== Variables - feel free to edit ==========
 ' List the column names used in the survey whose data should appear as-is
-survey_cols = Array("ID", "EndDate", "SolMgr", "Prospect", "EntityID", "AskAmt", "Purpose")
+survey_cols = Array("ID", "V9", "SolMgr", "Prospect", "EntityID", "AskAmt", "Purpose")
 ' List of column names from the follow-up survey whose data should appear as-is
 addl_cols = Array("Design", "TargetDt")
 ' List of column names to concatenate into Purpose
@@ -24,7 +24,7 @@ concat_cols = Array( _
 )
 ' Order in which columns should appear; use "NEW.COL" to insert a blank column
 col_order = Array( _
-    "EndDate", "NEW.COL", "TargetDt", "NEW.COL", "NEW.COL", _
+    "V9", "NEW.COL", "TargetDt", "NEW.COL", "NEW.COL", _
     "SolMgr", "Prospect", "EntityID", "Purpose", _
     "Design", "Centers", "AskAmt", _
     "NEW.COL", "NEW.COL", "NEW.COL", "ID" _
@@ -126,13 +126,32 @@ Cells.Replace "#N/A", "", xlWhole
 Range("A:A").NumberFormat = "mm/dd/yyyy"
 
 
-' Reorder columns as needed
-For Each colname In col_order
-    On Error GoTo BadColName
-    On Error GoTo 0
-Next colname
+' Sort columns
+' Sheets("Results").Sort.SortFields.Clear
+' Join() concatenates the array with a , separator
+Sheets("Results").Sort.SortFields.Add _
+    Key:=Range("1:1"), CustomOrder:=Join(col_order, ",")
+With Sheets("Results").Sort
+    ' xlLeftToRight sorts columns by row, instead of rows by column
+    .Orientation = xlLeftToRight
+    .Apply
+End With
+' Format V9 as date sans time
+colname = "V9"
+On Error GoTo BadColName
+    Cells.Find(colname, , xlValues, xlWhole).EntireColumn.NumberFormat = "mm/dd/yyyy"
+On Error GoTo 0
+' Add blank columns in necessary spots
+For idx = 0 To UBound(col_order)
+    ' NEW.COL indicates an insertion point
+    If col_order(idx) = "NEW.COL" Then
+        Cells(1, idx + 1).EntireColumn.Insert Shift:=xlShiftToRight
+    End If
+Next idx
+
 
 ' Check for double headers (rows 1 and 2) and rename row 1 headers
+' See if 2nd row of V9 is not in date format
 
 
 ' Done!
