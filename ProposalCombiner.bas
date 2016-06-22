@@ -14,9 +14,9 @@ Dim final_colnames As Variant
 
 ' ========== Variables - feel free to edit ==========
 ' List the column names used in the survey whose data should appear as-is
-survey_cols = Array("V9", "Q1", "Q2", "Q3", "Q5", "Q9")
+survey_cols = Array("ID", "EndDate", "SolMgr", "Prospect", "EntityID", "AskAmt", "Purpose")
 ' List of column names from the follow-up survey whose data should appear as-is
-addl_cols = Array("QID5", "QID22_TEXT")
+addl_cols = Array("Design", "TargetDt")
 ' List of column names to concatenate into Purpose
 concat_cols = Array( _
     "Q8_1", "Q8_2", "Q8_3", "Q8_5", "Q8_6", "Q8_7", "Q8_8", "Q8_9", "Q8_10", _
@@ -24,23 +24,24 @@ concat_cols = Array( _
 )
 ' Order in which columns should appear; use "NEW.COL" to insert a blank column
 col_order = Array( _
-    "V9", "NEW.COL", "QID22_TEXT", "NEW.COL", "NEW.COL", _
-    "Q1", "Q2", "Q3", "Purpose", _
-    "QID5", "Purpose", "Q5", _
-    "NEW.COL", "NEW.COL", "NEW.COL" _
+    "EndDate", "NEW.COL", "TargetDt", "NEW.COL", "NEW.COL", _
+    "SolMgr", "Prospect", "EntityID", "Purpose", _
+    "Design", "Centers", "AskAmt", _
+    "NEW.COL", "NEW.COL", "NEW.COL", "ID" _
 )
 ' Ordered header names to use in the final data; should match up to col_order
 final_colnames = Array( _
     "Date of Request", "Date of Mtg", "Date Promised", "Date Completed", "Writer", _
-    "Requested By", "Prospect Name", "Entity ID ", "Purpose", _
+    "Requested By", "Prospect Name", "Entity ID", "Purpose", _
     "Design Assistance Needed", "Center Ask", "Ask Amount/Range", _
-    "Final Review By", "Final Draft Saved to Team Fldr (X)", "Notes" _
+    "Final Review By", "Final Draft Saved to Team Fldr (X)", "Notes", "ID" _
 )
 
 ' ==========  Do not edit below this line  ==========
 
 ' Clear Results tab
 Sheets("Results").Cells.Clear
+
 
 ' Copy survey columns to Results tab as-is
 ' Loop through the column names in survey_cols
@@ -52,6 +53,7 @@ For Each colname In survey_cols
     ' Insert to column A of Results tab
     Sheets("Results").Range("A1").Insert Shift:=xlShiftToRight
 Next colname
+
 
 ' Variables and constants for concatenation
 Dim col As Range
@@ -87,13 +89,42 @@ For Each colname In concat_cols
     Next row
 Next colname
 ' Change header to Purpose
-Sheets("Results").Range("A1").Value = "Purpose"
+Sheets("Results").Range("A1").Value = "Centers"
 
-' Append additional fields from Follow-Up Data
+
+' Find used range on Follow-Up Data for vlookup
+Dim vlrange As String
+Dim vlcol As Integer
+vlrange = Sheets("Paste Follow-Up Data").Cells.Find("ID", , xlValues, xlWhole).Address
+vlrange = vlrange & ":" & Split(Sheets("Paste Follow-Up Data").UsedRange.Address, ":")(1)
+' Range includes everything from the "ID" column to the bottom right
+Debug.Print vlrange
+Dim vldata As Range
+Set vldata = Sheets("Paste Follow-Up Data").Range(vlrange)
+' Append additional fields from Follow-Up Data, matching on ID
 For Each colname In addl_cols
+    ' Grab the column number associated with current data
     On Error GoTo BadColName
+        vlcol = vldata.Cells.Find(colname, , xlValues, xlWhole).Column - vldata.Cells.Find("ID", , xlValues, xlWhole).Column + 1
     On Error GoTo 0
+    ' Do vlookups from vldata onto Results worksheet
+    Sheets("Results").Activate
+    Range("A:A").Insert
+    ' Find current ID column
+    Dim id_col As Variant
+    id_col = Split(Sheets("Results").Cells.Find("ID", , xlValues, xlWhole).Address, "$")(1)
+    ' Fill in each row
+    Dim idx As Integer
+    For idx = 1 To nrow
+        Cells.Range("A" & idx).Formula = "=VLOOKUP(" & id_col & idx & ", 'Paste Follow-Up Data'!" & vlrange & ", " & vlcol & ", False)"
+        Cells.Range("A" & idx).Value = Cells.Range("A" & idx).Value
+    Next idx
 Next colname
+' Clear NAs
+Cells.Replace "#N/A", "", xlWhole
+' Format TargetDt as a date
+Range("A:A").NumberFormat = "mm/dd/yyyy"
+
 
 ' Reorder columns as needed
 For Each colname In col_order
